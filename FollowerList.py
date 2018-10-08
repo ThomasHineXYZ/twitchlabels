@@ -44,16 +44,40 @@ def twitchApi(query, parameter, value):
         print("Unable to set value. Exiting...")
         exit()
 
+    if 'status' in result:
+        if (result['status'] == 429):
+            print("Status ID: 429")
+        print("Error Name: " + result["error"])
+        print("Error Message: " + result["message"])
+        print("")
+        print(result)
+        exit()
+
+    print(result)
+
     return result
 
+def nameToFile(userName, fileName):
+    file = open(fileName + ".txt","w")
+    file.write(userName)
+    file.close()
+
+    return
+
+# Grab the user's user_id
 userId = twitchApi("users", "login", userName)['data'][0]['id']
 
-##########################################################
-#              Grab the user_id for the user             #
-##########################################################
-
+# Grab the follower list
 followerList = twitchApi("users/follows", "to_id", userId)['data']
 
+# Most recent follower
 followerUserId = followerList[0]["from_id"]
 displayName = twitchApi("users", "id", followerUserId)['data'][0]['display_name']
-print(displayName)
+nameToFile(displayName, "newest_follower")
+
+# 20 recent followers
+for val in followerList:
+    followerUserId = val["from_id"]
+    displayName = twitchApi("users", "id", followerUserId)['data'][0]['display_name']
+    print(displayName)
+
