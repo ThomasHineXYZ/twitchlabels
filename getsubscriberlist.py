@@ -19,8 +19,9 @@ accessToken="" #Generate an OAuth token with channel_subscriptions scope and ins
 channelName=""  #Put your channel name here
 saveLocation = "subscriberList.txt" #Put the location you'd like to save your list here
 
-###################################################################
-
+#################################
+# Grab the user_id for the user #
+#################################
 session=Session()
 channelId=""
 
