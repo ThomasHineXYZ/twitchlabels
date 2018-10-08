@@ -1,9 +1,7 @@
-from urllib.parse import urlencode
 from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.exceptions import HTTPError, InvalidURL, ConnectionError
-import json
 from pathlib import Path
+import json
 
 ########################
 #  User Defined Values #
