@@ -15,12 +15,10 @@ saveLocation = "subscriberList.txt" #Put the location you'd like to save your li
 # Twitch's base API url (Helix is essentially v6)
 baseApiUrl = "https://api.twitch.tv/helix/"
 
-def getUserName(userId):
-    # Grabs the user's `user_id` from the Twitch API
-    queryUrl = "users"
-    parameter = "id"
+def twitchApi(query, parameter, value):
+    baseApiUrl = "https://api.twitch.tv/helix/"
 
-    fullUrl = baseApiUrl + queryUrl + "?" + parameter + "=" + userId
+    apiQueryUrl = baseApiUrl + query + "?" + parameter + "=" + value
 
     retryAdapter = HTTPAdapter(max_retries = 2)
     session=Session()
@@ -28,94 +26,34 @@ def getUserName(userId):
     session.mount('http://', retryAdapter)
 
     #Find the Channel ID
-    response = session.get(fullUrl, headers = {
+    response = session.get(apiQueryUrl, headers = {
         'Client-ID': credentials['clientId'],
         'Content-Type': 'application/json'
     })
 
+    # Check that the value was fetched and set correctly
     try:
         result = json.loads(response.text)
-        resultData = result['data'][0]
 
     except:
-        print("Unable to fetch user name. Exiting...")
+        print("Was unable to fetch value. Exiting...")
         exit()
 
     # If something was set for the result variable, continue. If nothing, exit
-    userId = 0
     if not (result):
-        print("Unable to set user name. Exiting...")
+        print("Unable to set value. Exiting...")
         exit()
 
-    return resultData["display_name"]
+    return result
 
-# Grabs the user's `user_id` from the Twitch API
-queryUrl = "users"
-parameter = "login"
-
-fullUrl = baseApiUrl + queryUrl + "?" + parameter + "=" + userName
-
-retryAdapter = HTTPAdapter(max_retries = 2)
-session=Session()
-session.mount('https://', retryAdapter)
-session.mount('http://', retryAdapter)
-
-#Find the Channel ID
-response = session.get(fullUrl, headers = {
-    'Client-ID': credentials['clientId'],
-    'Content-Type': 'application/json'
-})
-
-try:
-    result = json.loads(response.text)
-    resultData = result['data'][0]
-
-except:
-    print("Unable to fetch user ID. Exiting...")
-    exit()
-
-# If something was set for the result variable, continue. If nothing, exit
-userId = 0
-if not (result):
-    print("Unable to set user ID. Exiting...")
-    exit()
-
-userId = resultData['id']
-
+userId = twitchApi("users", "login", userName)['data'][0]['id']
 
 ##########################################################
 #              Grab the user_id for the user             #
 ##########################################################
 
-# Grabs the user's `user_id` from the Twitch API
-queryUrl = "users/follows"
-parameter = "to_id"
+followerList = twitchApi("users/follows", "to_id", userId)['data']
 
-fullUrl = baseApiUrl + queryUrl + "?" + parameter + "=" + userId
-
-retryAdapter = HTTPAdapter(max_retries = 2)
-session = Session()
-session.mount('https://', retryAdapter)
-session.mount('http://', retryAdapter)
-
-#Find the Channel ID
-response = session.get(fullUrl, headers = {
-    'Client-ID': credentials['clientId'],
-    'Content-Type': 'application/json'
-})
-
-try:
-    result = json.loads(response.text)
-    resultData = result['data']
-
-except:
-    print("Unable to fetch follower list. Exiting...")
-    exit()
-
-# If something was set for the result variable, continue. If nothing, exit
-if not (resultData):
-    print("Unable to set user ID. Exiting...")
-    exit()
-
-userId = resultData[0]["from_id"]
-print(getUserName(userId))
+followerUserId = followerList[0]["from_id"]
+displayName = twitchApi("users", "id", followerUserId)['data'][0]['display_name']
+print(displayName)
