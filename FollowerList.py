@@ -3,6 +3,7 @@ from requests import Session
 from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError, InvalidURL, ConnectionError
 import json
+from pathlib import Path
 
 ########################
 #  User Defined Values #
@@ -23,8 +24,22 @@ userSettings = {
 ##################################################################
 #  Unless you know what you're doing, don't touch the code below #
 ##################################################################
-# Load up the credentials file
-credJsonFile = json.load(open('creds.json', 'r'))
+# Checks if the credentials file is present
+credentialsFile = Path("creds.json")
+if not (credentialsFile.exists()) & (credentialsFile.is_file()):
+    print("Please set up the credentials file and then re-run this program")
+    exit()
+
+# Load up the credentials file and check if the credentials data is all entered
+credJsonFile = json.load(open(credentialsFile, 'r'))
+if (credJsonFile["userName"] == ""):
+    print("Oops, looks like you forgot to enter in your username")
+    exit()
+
+if (credJsonFile["credentials"]["clientId"] == ""):
+    print("Oops, looks like you forgot to enter in your client ID")
+    exit()
+
 userName = credJsonFile["userName"]
 credentials = credJsonFile["credentials"]
 
@@ -45,7 +60,7 @@ def twitchApi(query, parameter, values, limit = 0):
             arguments = arguments + parameter + "=" + value + "&"
 
         apiQueryUrl = baseApiUrl + query + "?" + arguments
-        #apiQueryUrl = apiQueryUrl.rstrip("&")
+        apiQueryUrl = apiQueryUrl.rstrip("&")
 
     # If a limit number is given
     if (limit > 0):
