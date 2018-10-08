@@ -9,23 +9,29 @@ credJsonFile = json.load(open('creds.json', 'r'))
 userName = credJsonFile["userName"]
 credentials = credJsonFile["credentials"]
 
-# Location where the filled text file will go
-saveLocation = "subscriberList.txt" #Put the location you'd like to save your list here
-
-# Twitch's base API url (Helix is essentially v6)
-baseApiUrl = "https://api.twitch.tv/helix/"
-
-def twitchApi(query, parameter, value):
+def twitchApi(query, parameter, values):
+    # Twitch's base API url (Helix is essentially v6)
     baseApiUrl = "https://api.twitch.tv/helix/"
 
-    apiQueryUrl = baseApiUrl + query + "?" + parameter + "=" + value
+    # If it is a single value
+    if (type(values) is str):
+        value = values
+        apiQueryUrl = baseApiUrl + query + "?" + parameter + "=" + value
+
+    # If it's an array/list
+    else:
+        arguments = ""
+        for value in values:
+            arguments = arguments + parameter + "=" + value + "&"
+
+        apiQueryUrl = baseApiUrl + query + "?" + arguments
 
     retryAdapter = HTTPAdapter(max_retries = 2)
-    session=Session()
+    session = Session()
     session.mount('https://', retryAdapter)
     session.mount('http://', retryAdapter)
 
-    #Find the Channel ID
+    # Run the API request, and store the results
     response = session.get(apiQueryUrl, headers = {
         'Client-ID': credentials['clientId'],
         'Content-Type': 'application/json'
@@ -44,7 +50,10 @@ def twitchApi(query, parameter, value):
         print("Unable to set value. Exiting...")
         exit()
 
+    # Checks if an error was returned
     if 'status' in result:
+        print("API ERROR OCCURED:")
+        print("")
         if (result['status'] == 429):
             print("Status ID: 429")
         print("Error Name: " + result["error"])
@@ -53,31 +62,46 @@ def twitchApi(query, parameter, value):
         print(result)
         exit()
 
-    print(result)
+    return result['data']
 
-    return result
-
-def nameToFile(userName, fileName):
+def nameToFile(userNames, fileName):
     file = open(fileName + ".txt","w")
-    file.write(userName)
+
+    # If it is a single value
+    if (type(userNames) is str):
+        userName = userNames
+        file.write(userName)
+
+    # If it's an array/list
+    else:
+        for userName in userNames:
+            file.write(userName + "\n")
+
     file.close()
 
     return
 
 # Grab the user's user_id
-userId = twitchApi("users", "login", userName)['data'][0]['id']
+userId = twitchApi("users", "login", userName)[0]['id']
 
 # Grab the follower list
-followerList = twitchApi("users/follows", "to_id", userId)['data']
+followerList = twitchApi("users/follows", "to_id", userId)
 
 # Most recent follower
 followerUserId = followerList[0]["from_id"]
-displayName = twitchApi("users", "id", followerUserId)['data'][0]['display_name']
+displayName = twitchApi("users", "id", followerUserId)[0]['display_name']
 nameToFile(displayName, "newest_follower")
 
 # 20 recent followers
-for val in followerList:
-    followerUserId = val["from_id"]
-    displayName = twitchApi("users", "id", followerUserId)['data'][0]['display_name']
-    print(displayName)
+followerIds = []
+for follower in followerList:
+    followerUserId = follower["from_id"]
+    followerIds.append(followerUserId)
+
+followersInfo = twitchApi("users", "id", followerIds)
+displayNames = []
+for follower in followersInfo:
+    displayNames.append(follower["display_name"])
+
+nameToFile(displayNames, "recent_followers")
 
