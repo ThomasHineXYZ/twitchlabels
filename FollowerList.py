@@ -4,16 +4,36 @@ from requests.adapters import HTTPAdapter
 from requests.exceptions import HTTPError, InvalidURL, ConnectionError
 import json
 
+########################
+#  User Defined Values #
+########################
+# If you don't know Python, booleans (yes or no) need to be set as True or
+# False (with the first letter as capital)
+userSettings = {
+    "recent_followers": {
+        # How many recent follower's you've had. Leave at zero to load the
+        # default amount
+        "limit": 0,
+
+        # If the list should be reversed
+        "reverse": False
+    }
+}
+
+##################################################################
+#  Unless you know what you're doing, don't touch the code below #
+##################################################################
 # Load up the credentials file
 credJsonFile = json.load(open('creds.json', 'r'))
 userName = credJsonFile["userName"]
 credentials = credJsonFile["credentials"]
 
-def twitchApi(query, parameter, values):
-    # Twitch's base API url (Helix is essentially v6)
+def twitchApi(query, parameter, values, limit = 0):
+    # Twitch's base API url ("Helix" is essentially v6)
     baseApiUrl = "https://api.twitch.tv/helix/"
 
     # If it is a single value
+    apiQueryUrl = ""
     if (type(values) is str):
         value = values
         apiQueryUrl = baseApiUrl + query + "?" + parameter + "=" + value
@@ -25,6 +45,12 @@ def twitchApi(query, parameter, values):
             arguments = arguments + parameter + "=" + value + "&"
 
         apiQueryUrl = baseApiUrl + query + "?" + arguments
+        #apiQueryUrl = apiQueryUrl.rstrip("&")
+
+    # If a limit number is given
+    if (limit > 0):
+        apiQueryUrl = apiQueryUrl + "&first=" + str(limit)
+        print(apiQueryUrl)
 
     retryAdapter = HTTPAdapter(max_retries = 2)
     session = Session()
@@ -85,12 +111,15 @@ def nameToFile(userNames, fileName):
 userId = twitchApi("users", "login", userName)[0]['id']
 
 # Grab the follower list
-followerList = twitchApi("users/follows", "to_id", userId)
+followerList = twitchApi("users/follows", "to_id", userId, userSettings['recent_followers']['limit'])
 
 # Most recent follower
 followerUserId = followerList[0]["from_id"]
 displayName = twitchApi("users", "id", followerUserId)[0]['display_name']
 nameToFile(displayName, "newest_follower")
+
+if (userSettings['recent_followers']['reverse']):
+    followerList = reversed(followerList)
 
 # 20 recent followers
 followerIds = []
